@@ -1,5 +1,5 @@
 import 'dart:developer';
-
+import 'package:external_app_launcher/external_app_launcher.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -86,6 +86,10 @@ class _MyHomePageState extends State<MyHomePage> {
     if (status == false) {
       final bool? perm = await FlutterOverlayWindow.requestPermission();
     }
+    FlutterOverlayWindow.overlayListener.listen((event) async {
+      log("Current Event: $event");
+      await FlutterOverlayWindow.closeOverlay();
+    });
   }
 
   @override
@@ -143,17 +147,8 @@ class _MyHomePageState extends State<MyHomePage> {
             throw Exception('Could not launch');
           } else {
             await FlutterOverlayWindow.showOverlay(
-              height: 75,
-              width: 75,
+              enableDrag: true,
             );
-            await FlutterOverlayWindow.resizeOverlay(75, 75, true);
-            await FlutterOverlayWindow.updateFlag(OverlayFlag.defaultFlag);
-            FlutterOverlayWindow.overlayListener.listen((event) async {
-              log("Current Event: $event");
-              await FlutterOverlayWindow.closeOverlay();
-              await _channel.invokeMethod('makeSkypeCall');
-            });
-            await _channel.invokeMethod('makeSkypeCall');
           }
         },
         tooltip: 'Increment',
@@ -166,10 +161,42 @@ class _MyHomePageState extends State<MyHomePage> {
 @pragma("vm:entry-point")
 void overlayMain() {
   runApp(MaterialApp(
-      home: ElevatedButton(
-        onPressed: () async {
-          FlutterOverlayWindow.closeOverlay();
-        },
-        child: const Text('Close'),
+      debugShowCheckedModeBanner: false,
+      home: GestureDetector(
+        onTap: pressOnOverlay,
+        child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Padding(
+              padding: const EdgeInsets.only(top: 225),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Container(
+                  height: 100,
+                  width: double.maxFinite,
+                  color: Colors.black26,
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.ads_click,
+                      color: Colors.white,
+                    ),
+                    title: const Text(
+                      'Click on screen after finishing to return to malaa app',
+                      style: TextStyle(
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            )),
       )));
+}
+
+pressOnOverlay() async {
+  FlutterOverlayWindow.closeOverlay();
+  await LaunchApp.openApp(
+      androidPackageName: 'com.example.url_launcher_test',
+      iosUrlScheme: '',
+      appStoreLink: '',
+      openStore: false);
 }
